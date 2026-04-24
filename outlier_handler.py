@@ -1,30 +1,40 @@
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def plot_boxplot(df, column, title):
-    plt.figure(figsize=(6,4))
-    sns.boxplot(x=df[column])
-    plt.title(title)
-    plt.xlabel(column)
-    plt.show()
+def handle_outliers_iqr_multi(df, columns):
+    
+    df_copy = df.copy()
 
-def remove_outliers_iqr(df, column):
-    Q1 = df[column].quantile(0.25)
-    Q3 = df[column].quantile(0.75)
-    IQR = Q3 - Q1
+    for col in columns:
+        plt.figure(figsize=(10,4))
 
-    lower = Q1 - 1.5 * IQR
-    upper = Q3 + 1.5 * IQR
+        
+        plt.subplot(1,2,1)
+        sns.boxplot(x=df_copy[col])
+        plt.title(f"{col} - Before")
 
-    return df[(df[column] >= lower) & (df[column] <= upper)]
+        
+        Q1 = df_copy[col].quantile(0.25)
+        Q3 = df_copy[col].quantile(0.75)
+        IQR = Q3 - Q1
 
-def visualize_outliers(df, column):
-    plot_boxplot(df, column, "Before Outlier Removal")
+        lower = Q1 - 1.5 * IQR
+        upper = Q3 + 1.5 * IQR
 
-    df_clean = remove_outliers_iqr(df, column)
+       
+        outliers = df_copy[(df_copy[col] < lower) | (df_copy[col] > upper)]
+        print(f"{col} → Outliers detected: {len(outliers)}")
 
-    plot_boxplot(df_clean, column, "After Outlier Removal")
+        
+        df_copy[col] = df_copy[col].clip(lower, upper)
 
-    return df_clean
+        
+        plt.subplot(1,2,2)
+        sns.boxplot(x=df_copy[col])
+        plt.title(f"{col} - After (Capped)")
+
+        plt.tight_layout()
+        plt.show()
+
+    return df_copy
